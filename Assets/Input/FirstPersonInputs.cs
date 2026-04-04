@@ -3,16 +3,19 @@ using UnityEngine.InputSystem;
 
 namespace Descent
 {
-    public class InputSystemScript : MonoBehaviour
+    public class FirstPersonInputs : MonoBehaviour
     {
         [Header("Player Input Values")]
         public Vector2 movement;
         public Vector2 characterRotation;
         public bool jump;
         public bool sprint;
+        [Header("Movement Settings")]
+        public bool analogMovement;
+
         [Header("Mouse Cursor Settings")]
         public bool cursorLocked = true;
-        public bool cursorInputForLook = true;
+        public bool enabledInputForLook = true;
         
 
         public void OnMove(InputValue value)
@@ -22,7 +25,7 @@ namespace Descent
 
         public void OnLook(InputValue value)
         {
-            if(cursorInputForLook)
+            if(enabledInputForLook)
                 characterRotation = value.Get<Vector2>();
         }
 

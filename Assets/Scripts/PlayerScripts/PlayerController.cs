@@ -30,118 +30,116 @@ tight tunnels, so it would make sense to have be bandaged every once and a while
 be prioritizd so that the player is forced to return to supply areas)
 
 */
-
-public class PlayerController : MonoBehaviour
+namespace Descent
 {
-
-    [Header("Player Objects")]
-    public Rigidbody rb;
-    public GameObject camHolder;
-    [Header("Player Settings")]
-    public float speed;
-    public float sensitivity;
-    public float maxForce;
-    public float jumpForce;
-    private Vector2 move, look;
-    private bool grounded = true;
-
-
-    private float lookRotation;
-    
-   //This will get reenabled when these scripts get split out into two codes,
-   //that way the input system can be checked for mouse and keyboard or controller.
-    /*private bool IsCurrentDeviceMouse
-    {
-        get
-        {
-            #if ENABLE_INPUT_SYSTEM
-            return _playerInput.currentControlScheme == "KeyboardMouse";
-            #else
-            return false;
-            #endif
-        }
-    }*/
-
-    GameObject _mainCamera;
-    void Awake()
-    {
-    
-    }
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    public class PlayerController : MonoBehaviour
     {
 
+        [Header("Player Objects")]
+        public Rigidbody rb;
+        public GameObject camHolder;
+        [Header("Player Settings")]
+        public float speed;
+        public float sensitivity;
+        public float maxForce;
+        public float jumpForce;
+        private Vector2 look;
+        private bool grounded = true;
+
+
+        private float lookRotation;
+
+        private PlayerInput _playerInput;
+        private FirstPersonInputs _input;
         
-    }
-
-    // Update is called once per frame
-    void LateUpdate()
-    {
-        ProcessLook();
-
-    }
-
-    private void ProcessLook()
-    {
-        //Turn Model
-        transform.Rotate(Vector3.up * look.x * sensitivity);
-
-        //Turn Camera
-        lookRotation += (-look.y * sensitivity);
-        lookRotation = Mathf.Clamp(lookRotation, -90f, 90f);
-        camHolder.transform.eulerAngles = new Vector3(lookRotation, camHolder.transform.eulerAngles.y, camHolder.transform.eulerAngles.z);
-    }
-
-    public void OnMove(InputValue value)
-    {
-        move = value.Get<Vector2>();
-    }
-
-    public void OnLook(InputValue value)
-    {
-        look = value.Get<Vector2>();
-    }
-
-    public void OnJump(InputValue value)
-    {
-        Jump();
-    }
-
-
-    private void FixedUpdate()
-    {
-        ProcessMovement();
-    }
-
-    private void ProcessMovement()
-    {
-        //Find target velocity
-        Vector3 currentVelocity = rb.linearVelocity;
-        Vector3 targetVelocity = new Vector3(move.x, 0, move.y) * speed;
-
-        //Align direction
-        targetVelocity = transform.TransformDirection(targetVelocity);
-
-        //Calculate forces
-        Vector3 velocityChange = targetVelocity - currentVelocity;
-        velocityChange = new Vector3(velocityChange.x, 0, velocityChange.z);
-
-        //Limit forces
-        Vector3.ClampMagnitude(velocityChange, maxForce);
-
-        //Apply forces
-        rb.AddForce(velocityChange, ForceMode.VelocityChange);
-    }
-
-
-    private void Jump()
-    {
-        Vector3 jumpForces = Vector3.zero;
-        if (grounded)
+    //This will get reenabled when these scripts get split out into two codes,
+    //that way the input system can be checked for mouse and keyboard or controller.
+        private bool IsCurrentDeviceMouse
         {
-            jumpForces = Vector3.up * jumpForce;
-            rb.AddForce(jumpForces, ForceMode.VelocityChange);
+            get
+            {
+                return _playerInput.currentControlScheme == "KeyboardMouse";
+            }
         }
-    }
-} 
 
+        void Start()
+        {
+            _playerInput =  GetComponent<PlayerInput>();
+            _input = GetComponent<FirstPersonInputs>();
+        }
+
+        GameObject _mainCamera;
+        void Awake()
+        {
+        
+        }
+        // Start is called once before the first execution of Update after the MonoBehaviour is created
+
+        void Update()
+        {
+            Jump();
+        }
+
+        // Update is called once per frame
+        void LateUpdate()
+        {
+            ProcessLook();
+
+        }
+
+        private void ProcessLook()
+        {
+            //Turn Model
+            transform.Rotate(Vector3.up * _input.characterRotation.x * sensitivity);
+
+            //Turn Camera
+            lookRotation += (-_input.characterRotation.y * sensitivity);
+            lookRotation = Mathf.Clamp(lookRotation, -90f, 90f);
+            camHolder.transform.eulerAngles = new Vector3(lookRotation, camHolder.transform.eulerAngles.y, camHolder.transform.eulerAngles.z);
+        }
+
+
+
+        private void FixedUpdate()
+        {
+            ProcessMovement();
+        }
+
+        private void ProcessMovement()
+        {
+            //Find target velocity
+            Vector3 currentVelocity = rb.linearVelocity;
+            Vector3 targetVelocity = new Vector3(_input.movement.x, 0, _input.movement.y) * speed;
+
+            //Align direction
+            targetVelocity = transform.TransformDirection(targetVelocity);
+
+            //Calculate forces
+            Vector3 velocityChange = targetVelocity - currentVelocity;
+            velocityChange = new Vector3(velocityChange.x, 0, velocityChange.z);
+
+            //Limit forces
+            Vector3.ClampMagnitude(velocityChange, maxForce);
+
+            //Apply forces
+            rb.AddForce(velocityChange, ForceMode.VelocityChange);
+        }
+
+
+        private void Jump()
+        {
+
+            Vector3 jumpForces = Vector3.zero;
+
+            if(_input.jump)
+            {
+                if (grounded)
+                {
+                    jumpForces = Vector3.up * jumpForce;
+                    rb.AddForce(jumpForces, ForceMode.VelocityChange);
+                    _input.jump = false;
+                }
+            }
+        }
+    } 
+}

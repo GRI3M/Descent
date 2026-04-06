@@ -39,7 +39,7 @@ namespace Descent
             sprint = value.isPressed;
         }
 
-        private void OnAplicationFocus(bool focus)
+        private void OnApplicationFocus(bool focus)
         {
             SetCursosrState(cursorLocked);
         }

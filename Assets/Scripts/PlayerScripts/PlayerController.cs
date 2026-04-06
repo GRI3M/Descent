@@ -37,20 +37,25 @@ namespace Descent
 
         [Header("Player Objects")]
         public Rigidbody rb;
-        public GameObject camHolder;
+        
         [Header("Player Settings")]
         public float speed;
         public float sensitivity;
         public float maxForce;
         public float jumpForce;
-        private Vector2 look;
         private bool grounded = true;
 
-
-        private float lookRotation;
+        public GameObject CinemachineCameraTarget;
+        public float TopClamp = 90.0f;
+        public float BottomClamp = -90.0f;
+        public bool InvertedCamera = false;
+        private float _lookRotation;
 
         private PlayerInput _playerInput;
         private FirstPersonInputs _input;
+
+        private GameObject _camHolder;
+        
         
     //This will get reenabled when these scripts get split out into two codes,
     //that way the input system can be checked for mouse and keyboard or controller.
@@ -68,10 +73,9 @@ namespace Descent
             _input = GetComponent<FirstPersonInputs>();
         }
 
-        GameObject _mainCamera;
         void Awake()
         {
-        
+            if(_camHolder == null) _camHolder = GameObject.FindGameObjectWithTag("MainCamera");
         }
         // Start is called once before the first execution of Update after the MonoBehaviour is created
 
@@ -84,21 +88,36 @@ namespace Descent
         void LateUpdate()
         {
             ProcessLook();
-
         }
 
         private void ProcessLook()
         {
-            //Turn Model
-            transform.Rotate(Vector3.up * _input.characterRotation.x * sensitivity);
-
-            //Turn Camera
-            lookRotation += (-_input.characterRotation.y * sensitivity);
-            lookRotation = Mathf.Clamp(lookRotation, -90f, 90f);
-            camHolder.transform.eulerAngles = new Vector3(lookRotation, camHolder.transform.eulerAngles.y, camHolder.transform.eulerAngles.z);
+            float deltaTimeMultiplier = IsCurrentDeviceMouse ? 1.0f : Time.deltaTime;
+            HandlePlayerRotation(deltaTimeMultiplier);
+            HandleCameraRotations(deltaTimeMultiplier);
         }
 
+        private void HandlePlayerRotation(float dt)
+        {
+            //Gather mouse inputs and apply sensitivity then rotate player model
+            float xRotation = _input.characterRotation.x * sensitivity * dt;
+            transform.Rotate(Vector3.up * xRotation);
+        }
 
+        private void HandleCameraRotations(float dt)
+        {
+            //Gather mouse inputs and apply sensitivity and invert to normal
+
+            float invert = InvertedCamera ? 1f : -1f;
+            _lookRotation += (_input.characterRotation.y * sensitivity * invert * dt);
+            //Stop the camera rotations from going over or below 360 degrees
+            if (_lookRotation > 360f) _lookRotation -= 360f;
+            if (_lookRotation < -360f) _lookRotation += 360f;
+            //Clamp camera rotation to prevent doing a backflip with camera
+            _lookRotation = Mathf.Clamp(_lookRotation, BottomClamp, TopClamp);
+
+            CinemachineCameraTarget.transform.localRotation = Quaternion.Euler(_lookRotation, 0.0f, 0.0f);
+        }
 
         private void FixedUpdate()
         {
